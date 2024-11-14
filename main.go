@@ -61,8 +61,8 @@ func handleCreatePaste(c *gin.Context) {
 		expiration = time.Duration(hours) * time.Hour
 	}
 
-	// Generate unique ID for the paste
-	id := uuid.New().String()
+	// Generate a shorter unique ID for the paste
+	id := uuid.New().String()[:8]
 
 	// Store in Redis with specified expiration
 	ctx := context.Background()
