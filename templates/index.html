@@ -3,15 +3,31 @@
 <head>
     <title>Pastebin</title>
     <style>
-        body { max-width: 800px; margin: 0 auto; padding: 20px; }
-        textarea { width: 100%; min-height: 300px; margin: 20px 0; }
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        textarea { width: 100%; min-height: 300px; margin: 20px 0; padding: 10px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; }
+        select { padding: 5px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
     </style>
 </head>
 <body>
     <h1>Create New Paste</h1>
     <form action="/paste" method="POST">
-        <textarea name="content" placeholder="Enter your content here..."></textarea>
-        <br>
+        <div class="form-group">
+            <textarea name="content" placeholder="Enter your content here..." required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="expire">Expiration Time:</label>
+            <select name="expire" id="expire">
+                <option value="1">1 hour</option>
+                <option value="24" selected>24 hours</option>
+                <option value="72">3 days</option>
+                <option value="168">1 week</option>
+                <option value="infinite">Never expire</option>
+            </select>
+        </div>
         <button type="submit">Create Paste</button>
     </form>
 </body>

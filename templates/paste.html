@@ -3,13 +3,18 @@
 <head>
     <title>View Paste</title>
     <style>
-        body { max-width: 800px; margin: 0 auto; padding: 20px; }
-        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; }
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; }
+        .info { color: #666; margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <h1>Paste #{{.id}}</h1>
+    {{if .expiresAt}}
+    <div class="info">Expires at: {{.expiresAt}}</div>
+    {{else}}
+    <div class="info">This paste never expires</div>
+    {{end}}
     <pre>{{.content}}</pre>
-    <a href="/">Create New Paste</a>
 </body>
 </html>

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,16 +46,37 @@ func handleCreatePaste(c *gin.Context) {
 		return
 	}
 
+	// Parse expiration time
+	expireHours := c.PostForm("expire")
+	var expiration time.Duration
+
+	if expireHours == "infinite" {
+		expiration = 0 // 0 means no expiration in Redis
+	} else {
+		hours, err := strconv.Atoi(expireHours)
+		if err != nil || hours <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expiration time"})
+			return
+		}
+		expiration = time.Duration(hours) * time.Hour
+	}
+
 	// Generate unique ID for the paste
 	id := uuid.New().String()
 
-	// Store in Redis with 24 hour expiration
+	// Store in Redis with specified expiration
 	ctx := context.Background()
-	err := rdb.Set(ctx, id, content, 24*time.Hour).Err()
+	err := rdb.Set(ctx, id, content, expiration).Err()
 	if err != nil {
 		log.Printf("Error storing paste: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store paste"})
 		return
+	}
+
+	// If expiration is set, also store the expiration time for display
+	if expiration > 0 {
+		expirationTime := time.Now().Add(expiration)
+		rdb.Set(ctx, id+":expires", expirationTime.Unix(), expiration)
 	}
 
 	c.Redirect(http.StatusFound, "/paste/"+id)
@@ -77,8 +99,17 @@ func handleGetPaste(c *gin.Context) {
 		return
 	}
 
+	// Get expiration time if it exists
+	var expiresAt string
+	expirationTimestamp, err := rdb.Get(ctx, id+":expires").Int64()
+	if err == nil {
+		expirationTime := time.Unix(expirationTimestamp, 0)
+		expiresAt = expirationTime.Format("2006-01-02 15:04:05")
+	}
+
 	c.HTML(http.StatusOK, "paste.html", gin.H{
-		"content": content,
-		"id":      id,
+		"content":   content,
+		"id":        id,
+		"expiresAt": expiresAt,
 	})
 }
