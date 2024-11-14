@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  web:
+    image: ubuntu:latest
+    working_dir: /app
+    volumes: 
+      - .:/app
+      - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime:ro
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
+    ports:
+      - "2367:8080"
+    environment:
+      - REDIS_ADDR=redis:6379
+    command: /app/pbn
+    restart: always
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest
+    volumes:
+      - ./redis_data:/data
