@@ -39,6 +39,49 @@ func handleIndex(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{})
 }
 
+// func handleCreatePaste(c *gin.Context) {
+// 	content := c.PostForm("content")
+// 	if content == "" {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Content cannot be empty"})
+// 		return
+// 	}
+
+// 	// Parse expiration time
+// 	expireHours := c.PostForm("expire")
+// 	var expiration time.Duration
+
+// 	if expireHours == "infinite" {
+// 		expiration = 0 // 0 means no expiration in Redis
+// 	} else {
+// 		hours, err := strconv.Atoi(expireHours)
+// 		if err != nil || hours <= 0 {
+// 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid expiration time"})
+// 			return
+// 		}
+// 		expiration = time.Duration(hours) * time.Hour
+// 	}
+
+// 	// Generate a shorter unique ID for the paste
+// 	id := uuid.New().String()[:8]
+
+// 	// Store in Redis with specified expiration
+// 	ctx := context.Background()
+// 	err := rdb.Set(ctx, id, content, expiration).Err()
+// 	if err != nil {
+// 		log.Printf("Error storing paste: %v", err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store paste"})
+// 		return
+// 	}
+
+// 	// If expiration is set, also store the expiration time for display
+// 	if expiration > 0 {
+// 		expirationTime := time.Now().Add(expiration)
+// 		rdb.Set(ctx, id+":expires", expirationTime.Unix(), expiration)
+// 	}
+
+//		c.Redirect(http.StatusFound, "/paste/"+id)
+//	}
+
 func handleCreatePaste(c *gin.Context) {
 	content := c.PostForm("content")
 	if content == "" {
@@ -64,6 +107,9 @@ func handleCreatePaste(c *gin.Context) {
 	// Generate a shorter unique ID for the paste
 	id := uuid.New().String()[:8]
 
+	// Check if encryption is requested
+	enc := c.PostForm("enc")
+
 	// Store in Redis with specified expiration
 	ctx := context.Background()
 	err := rdb.Set(ctx, id, content, expiration).Err()
@@ -79,11 +125,17 @@ func handleCreatePaste(c *gin.Context) {
 		rdb.Set(ctx, id+":expires", expirationTime.Unix(), expiration)
 	}
 
-	c.Redirect(http.StatusFound, "/paste/"+id)
+	// Redirect to the paste page with the decryption key if encryption was used
+	if enc != "" {
+		c.Redirect(http.StatusFound, "/paste/"+id+"?enc="+enc)
+	} else {
+		c.Redirect(http.StatusFound, "/paste/"+id)
+	}
 }
 
 func handleGetPaste(c *gin.Context) {
 	id := c.Param("id")
+	enc := c.Query("enc")
 	ctx := context.Background()
 
 	content, err := rdb.Get(ctx, id).Result()
@@ -111,5 +163,6 @@ func handleGetPaste(c *gin.Context) {
 		"content":   content,
 		"id":        id,
 		"expiresAt": expiresAt,
+		"enc":       enc,
 	})
 }
